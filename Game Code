@@ -1,0 +1,1124 @@
+//Andrew McFarlane 
+//November 2013
+//Connect6 Game vs. AI
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <stdbool.h>
+
+bool aboutToWin = false;
+
+bool verticalCheck = false, horizontalCheck = false, positiveSlopeCheck = false, negativeSlopeCheck = false, upCheck = false, sideCheck = false, upSlantCheck = false, downSlantCheck = false;
+
+int longestComputer;
+int humanLongest;
+
+
+void printBoard(char **board, int n);
+
+void humanChoice(char **board, int n, char humanLetter);
+
+int computerChoice(char **board, int n, char computerLetter, char humanLetter, int recursionTracker);
+
+void firstMoveComputer(char **board, int n, char computerLetter);
+
+int findLongestEventual (char **board, int n, int row, int col);
+
+int findLongest(char **board, int n, int row, int col);
+
+bool stop3(char **board, int n, char computerLetter, char humanLetter);
+
+bool stop4(char **board, int n, char computerLetter, char humanLetter);
+
+bool stop5(char **board, int n, char computerLetter, char humanLetter);
+
+bool stopWUW(char **board, int n, char computerLetter, char humanLetter);
+
+bool stopUWWUWWU(char **board, int n, char computerLetter, char humanLetter);
+
+bool checkForWinner (char **board, int n);
+
+bool checkForDraw(char **board,int n);
+
+
+
+int main(void)
+{
+    int boardSize; // input value for board length
+    printf("Enter board dimensions (n): ");
+    scanf("%d",&boardSize);
+    
+    
+    char **board; // create 2-D Array of char characters
+    board = (char **)malloc(boardSize*sizeof(char *));
+    
+    
+    for (int i = 0; i < boardSize; i++) //output original board
+    {
+        board[i] = (char *)malloc(boardSize*sizeof(char));
+        
+        for (int j = 0; j < boardSize; j++){
+            board[i][j] = 'U';}}
+    
+    printBoard(board, boardSize);
+    
+    char computerStone, humanStone; // determine the colour of computer and human
+    printf("Computer playing B or W?: ");
+    scanf(" %c", &computerStone);
+    
+    if (computerStone == 'B')
+        humanStone = 'W';
+    else
+        humanStone = 'B';
+    
+    if (computerStone == 'B') // computer goes first if it is black
+    {firstMoveComputer(board, boardSize, computerStone);
+        printBoard(board, boardSize);}
+    
+    if (computerStone == 'W')
+    {humanChoice(board, boardSize, humanStone);
+        printBoard(board, boardSize);
+           firstMoveComputer(board, boardSize, computerStone);
+               printBoard(board, boardSize);}
+
+    
+    bool playGame = true;
+    while (playGame){
+        
+        humanChoice(board,boardSize,humanStone); // human goes first if it is black
+        
+        if (playGame == true)
+            printBoard(board, boardSize);
+        
+        if (playGame == true)
+            playGame = checkForWinner(board, boardSize);
+        
+        if (playGame == true)
+            playGame = checkForDraw(board,boardSize);
+        
+        if (playGame == true)
+            computerChoice(board, boardSize, computerStone, humanStone, 2);
+        
+        if (playGame == true)
+            printBoard(board, boardSize);
+        
+        if (playGame == true)
+            playGame = checkForWinner(board, boardSize);
+        
+        if (playGame == true)
+            playGame = checkForDraw(board,boardSize);}
+    
+    free(board); // free the memory held by the board
+    return 0; // terminate main
+} 
+
+
+
+void humanChoice(char **board, int n, char humanLetter)
+
+{ // start of humanChoice function
+    
+    int boardRow, boardColumn; // input the position of the stone
+    bool humanPlay = true;
+    
+    
+    while (humanPlay == true){ // loop to continue the game
+        
+        
+        printf("Lay down a stone (ROW COL): "); // input the position of the stone
+        scanf("%d %d", &boardRow, &boardColumn);
+        
+        
+        if (board[boardRow][boardColumn] == 'W'|| board[boardRow][boardColumn] == 'B'){ // check whether the position is taken
+            
+            printf("That square is occupied.\n");}
+        
+        if (board[boardRow][boardColumn] == 'U'){ // change spot if its not already taken
+            board[boardRow][boardColumn] = humanLetter;
+            humanPlay = false;}}
+    
+} // end of humanChoice function
+
+
+
+void firstMoveComputer(char **board, int n, char computerLetter)
+{
+    int middleRow = (n - 1)/2;
+    int middleColumn = (n - 1)/2;
+    
+    if (board[middleRow][middleColumn] == 'U')
+    {board[middleRow][middleColumn] = computerLetter;
+        printf("Computer lays a stone at ROW %d COL %d.\n", middleRow, middleColumn);}
+    else
+    {board[middleRow - 1][middleColumn] = computerLetter;
+        printf("Computer lays a stone at ROW %d COL %d.\n", middleRow - 1, middleColumn);}
+}
+
+
+
+int findLongestEventual (char **board, int n, int row, int col)
+
+{ // beginning of findLongest function
+    int left = 0, right = 0, up = 0, down = 0, upRight = 0, upLeft = 0, downRight = 0, downLeft = 0;
+    
+    // how many are LEFT of the entered position
+    bool leftLoop = true;
+    for (int i = col; (i > 0) && (i - 1 >= 0) && (leftLoop == true); i--){
+        if (board[row][i] == board[row][i - 1] || board[row][i - 1] == 'U')
+        left += 1;
+        else
+            leftLoop = false;}
+    
+    
+    // how many are RIGHT of the entered position
+    bool rightLoop = true;
+    for (int i = col; (i < n) && (i + 1 < n) && (rightLoop == true); i++){
+        if (board[row][i] == board[row][i + 1] || board[row][i + 1] == 'U')
+            right += 1;
+        else
+            rightLoop = false;}
+    
+    
+    // how many are ABOVE the entered position
+    bool upLoop = true;
+    for (int j = row; (j > 0) && (j - 1 >= 0) && (upLoop == true); j--){
+        if (board[j][col] == board[j - 1][col] || board[j - 1][col] == 'U')
+            up += 1;
+        else
+            upLoop = false;}
+    
+    
+    // how many are BELOW the entered position
+    bool downLoop = true;
+    for (int j = row; (j < n) && (j + 1 < n) && (downLoop == true); j++){
+        if (board[j][col] == board[j + 1][col] || board[j + 1][col] == 'U')
+            down += 1;
+        else
+            downLoop = false;}
+    
+    
+    // how many are UP AND RIGHT of the entered position
+    bool upRightLoop = true;
+    for(int i = row, j = col; (i > 0) && (j < n - 1) && (upRightLoop == true); i--, j++){
+        if (board[i][j] == board[i - 1][j + 1] || board[i - 1][j + 1] == 'U')
+            upRight += 1;
+        else
+            upRightLoop = false;}
+    
+    
+    // how many are UP AND LEFT of the entered position
+    bool upLeftLoop = true;
+    for(int i = row, j = col; (i > 0) && (j > 0) && (upLeftLoop == true); i--, j--){
+        if (board[i][j] == board[i - 1][j - 1] || board[i - 1][j - 1] == 'U')
+            upLeft += 1;
+        else
+            upLeftLoop = false;}
+    
+    
+    // how many are DOWN AND RIGHT of the entered position
+    bool downRightLoop = true;
+    for(int i = row, j = col; (i + 1 < n) && (j < n - 1) && (downRightLoop == true); i++, j++){
+        if (board[i][j] == board[i + 1][j + 1] || board[i + 1][j + 1] == 'U')
+            downRight += 1;
+        else
+            downRightLoop = false;}
+    
+    
+    // how many are DOWN AND LEFT of the entered position
+    bool downLeftLoop = true;
+    for(int i = row, j = col; (i + 1 < n) && (j > 0) && (downLeftLoop == true); i++, j--){
+        if (board[i][j] == board[i + 1][j - 1] || board[i + 1][j - 1] == 'U')
+            downLeft += 1;
+        else
+            downLeftLoop = false;}
+    
+    
+    int horizontalSum, verticalSum, positiveSlopeSum, negativeSlopeSum;
+    
+    horizontalSum = right + left + 1;
+    verticalSum = up + down + 1;
+    positiveSlopeSum = downLeft + upRight + 1;
+    negativeSlopeSum = upLeft + downRight + 1;
+    
+    if ((horizontalSum > verticalSum) && (horizontalSum > positiveSlopeSum) && (horizontalSum > negativeSlopeSum))
+    {if (horizontalSum >= 6)
+        horizontalCheck = true;
+        return horizontalSum;}
+    else if ((verticalSum > positiveSlopeSum) && (verticalSum > negativeSlopeSum))
+    {if (verticalSum >= 6)
+        verticalCheck = true;
+        return verticalSum;}
+    else if (positiveSlopeSum > negativeSlopeSum)
+    {if (positiveSlopeSum >= 6)
+        positiveSlopeCheck = true;
+        return positiveSlopeSum;}
+    else
+    {if (negativeSlopeSum >= 6)
+        negativeSlopeCheck = true;
+        return negativeSlopeSum;}
+}
+
+
+
+int computerChoice(char **board, int n, char computerLetter, char humanLetter, int recursionTracker)
+
+{
+    if (recursionTracker == 2){
+        int i,j,score = 0;
+        int possibleWinLongest;
+        int longestRow = 0, longestColumn = 0;
+        int longestEventual;
+        bool checker = true;
+        aboutToWin = false;
+        
+        for (i = 0; i < n; i++){
+            for (j = 0; j < n; j++){
+                
+                bool aboutToLose = false;
+                              
+                if (board[i][j] == 'U')
+                {{board[i][j] = computerLetter;
+                    
+                    if (checker)
+                    {
+                        longestRow = i;
+                        longestColumn = j;
+                        
+                        if (findLongestEventual(board, n, i, j) < 6)
+                            possibleWinLongest = 0;
+                        
+                        else
+                            possibleWinLongest = findLongest(board,n,i,j);
+                        
+                        score = possibleWinLongest - computerChoice(board, n, computerLetter, humanLetter, 1);
+                        checker = false;
+                    
+                    verticalCheck = false, horizontalCheck = false, positiveSlopeCheck = false, negativeSlopeCheck = false, upCheck = false, sideCheck = false, upSlantCheck = false, downSlantCheck = false;
+                    }
+                    
+                    int computerLongest, longestHuman;
+                    
+                    longestHuman = computerChoice(board, n, computerLetter, humanLetter, 1);
+                    longestEventual = findLongestEventual(board, n, i, j);
+                    
+                    
+computerLongest = findLongest(board,n,i,j);
+                    
+if ((verticalCheck == true && upCheck == true) || (horizontalCheck == true && sideCheck == true) || (positiveSlopeCheck == true && upSlantCheck == true) || (negativeSlopeCheck == true && downSlantCheck == true))
+    computerLongest = computerLongest;
+else
+    computerLongest = 0;
+                
+                   
+verticalCheck = false, horizontalCheck = false, positiveSlopeCheck = false, negativeSlopeCheck = false, upCheck = false, sideCheck = false, upSlantCheck = false, downSlantCheck = false;
+                    
+                    
+                    if (computerLongest >= 6)
+                        aboutToWin = true;
+                    
+                    if (longestHuman >= 6 && computerLongest < 6)
+                    {aboutToLose = true;
+                        humanLongest = longestHuman;}
+                        
+                    if (((computerLongest - longestHuman) > score) && aboutToLose == false){
+                        score = computerLongest - longestHuman;
+                        longestRow = i;
+                        longestColumn = j;
+                        longestComputer = computerLongest;}
+                    
+                    board[i][j] = 'U';}
+                }}}
+        
+        bool check = false;
+        if (humanLongest < 6 && longestComputer < 6)
+            
+        {if(check == false && aboutToWin == false)
+            check = stopUWWUWWU(board, n, computerLetter, humanLetter);
+            
+        if (computerChoice(board, n, computerLetter, humanLetter, 1) == 5 && aboutToWin == false && check ==false)
+            check = stop5(board,n, computerLetter, humanLetter);
+        
+        if (computerChoice(board, n, computerLetter, humanLetter, 1) == 4 && aboutToWin == false && check == false)
+            check = stop4(board, n, computerLetter, humanLetter);
+        
+        if(check == false && aboutToWin == false)
+            check = stopWUW(board, n, computerLetter, humanLetter && aboutToWin == false);
+        
+        if (computerChoice(board, n, computerLetter, humanLetter, 1) == 3 && aboutToWin == false && check == false && longestComputer <= 4)
+            check = stop3(board,n, computerLetter, humanLetter);}
+        
+        if (check == false){
+        printf("Computer lays a stone at ROW %d COL %d.\n", longestRow, longestColumn);
+            board[longestRow][longestColumn] = computerLetter;
+            humanLongest = 0;}}
+    
+    if (recursionTracker == 1){
+        {
+            char humanLetter;
+            if (computerLetter == 'B')
+                humanLetter = 'W';
+            else
+                humanLetter = 'B';
+            
+            int i, j;
+            int longestHuman = 0;
+            
+            for (i = 0; i < n; i++){
+                for (j = 0; j < n; j++){
+                    
+                    if (board[i][j] == 'U')
+                    {{board[i][j] = humanLetter;
+                  
+if ((findLongest(board, n, i, j) > longestHuman) && (findLongestEventual(board, n, i, j) >= 6))
+                 longestHuman = findLongest(board, n, i, j);}
+                        
+                        board[i][j] = 'U';}
+                }}
+            
+            return longestHuman;}}
+    
+    return 0;
+    }
+
+
+
+bool stop3 (char **board, int n, char computerLetter, char humanLetter)
+{
+    int left = 0, right = 0, up = 0, down = 0, upRight = 0, upLeft = 0, downRight = 0, downLeft = 0;
+    int row, col;
+    int stopRow = 0, stopCol = 0;
+    
+    for (row = 0; row < n; row++){
+        for (col = 0; col < n; col++){
+            
+                      
+            // how many are RIGHT
+            bool rightLoop = true;
+            for (int i = col; (i < n) && (i + 1 < n) && (rightLoop == true); i++){
+                if (board[row][i] == board[row][i + 1] && board[row][i] == humanLetter){
+                    right += 1;
+                
+                    if (right == 1 && i + 2 < n && board[row][i + 2] == 'U')
+                    {stopRow = row;
+                        stopCol = i + 2;}}
+                else
+                    rightLoop = false;}
+            
+            // how many are LEFT
+            bool leftLoop = true;
+            for (int i = col; (i >= 0) && (i - 1 >= 0) && (leftLoop == true); i++){
+                if (board[row][i] == board[row][i - 1] && board[row][i] == humanLetter){
+                    left += 1;
+                    
+                    if (left == 1 && i - 2 >= 0 && board[row][i - 2] == 'U')
+                    {stopRow = row;
+                        stopCol = i - 2;}}
+                else
+                    leftLoop = false;}
+            
+            
+            // how many are BELOW
+            bool downLoop = true;
+            for (int j = row; (j < n) && (j + 1 < n) && (downLoop == true); j++){
+                if (board[j][col] == board[j + 1][col] && board[j][col] == humanLetter){
+                    down += 1;
+                    
+                    if (down == 1 && j + 2 < n && board[j + 2][col] == 'U')
+                    {stopRow = j + 2;
+                        stopCol = col;}}
+                else
+                    downLoop = false;}
+            
+            
+            // how many are ABOVE
+            bool upLoop = true;
+            for (int j = row; (j > 0) && (j - 1 >= 0) && (upLoop == true); j--){
+                if (board[j][col] == board[j - 1][col] && board[j][col] == humanLetter){
+                    up += 1;
+                    
+                    if (up == 1 && j - 2 >= 0 && board[j - 2][col] == 'U')
+                    {stopRow = j - 2;
+                        stopCol = col;}}
+                else
+                    upLoop = false;}
+            
+
+            
+            // how many are UP AND LEFT
+            bool upLeftLoop = true;
+            for(int i = row, j = col; (i > 0) && (j > 0) && (upLeftLoop == true); i--, j--){
+                if (board[i][j] == board[i - 1][j + 1] && board[i][j] == humanLetter){
+                    upRight += 1;
+                    
+                    if (upLeft == 1 && j - 2 >= 0 && i - 2 >= 0 && board[i - 2][j - 2] == 'U')
+                    {stopRow = i - 2;
+                        stopCol = j - 2;}}
+                else
+                    upLeftLoop = false;}
+            
+            
+            // how many are UP AND RIGHT
+            bool upRightLoop = true;
+            for(int i = row, j = col; (i > 0) && (j < n - 1) && (upRightLoop == true); i--, j++){
+                if (board[i][j] == board[i - 1][j + 1] && board[i][j] == humanLetter){
+                    upRight += 1;
+                    
+                    if (upRight == 1 && j + 2 < n && i - 2 >= 0 && board[i - 2][j + 2] == 'U')
+                    {stopRow = i - 2;
+                        stopCol = j + 2;}}
+                else
+                    upRightLoop = false;}
+            
+            
+            
+            // how many are DOWN AND RIGHT
+            bool downRightLoop = true;
+            for(int i = row, j = col; (i + 1 < n) && (j < n - 1) && (downRightLoop == true); i++, j++){
+                if (board[i][j] == board[i + 1][j + 1] && board[i][j] == humanLetter){
+                    downRight += 1;
+                    
+                    if (downRight == 1 && i + 2 < n && j + 2 < n && board[i + 2][j + 2] == 'U')
+                    {stopRow = i + 2;
+                        stopCol = j + 2;}}
+                else
+                    downRightLoop = false;}
+            
+            
+            // how many are DOWN AND LEFT
+            bool downLeftLoop = true;
+            for(int i = row, j = col; (i + 1 < n) && (j > 0) && (downLeftLoop == true); i++, j--){
+                if (board[i][j] == board[i + 1][j - 1] && board[i][j] == humanLetter){
+                    downLeft += 1;
+                    
+                    if (downLeft == 1 && i + 2 < n && j - 2 >= 0 && board[i + 2][j - 2] == 'U')
+                    {stopRow = i + 2;
+                        stopCol = j - 2;}}
+                else
+                    downLeftLoop = false;}
+            
+            
+            left = 0;
+            right = 0;
+            up = 0;
+            down = 0;
+            upRight = 0;
+            upLeft = 0;
+            downLeft = 0;
+            downRight = 0;}}
+    
+    if (stopRow != 0 || stopCol != 0){
+    board[stopRow][stopCol] = computerLetter;
+        printf("Computer lays a stone at ROW %d COL %d.\n", stopRow, stopCol);
+        return true;}
+    else
+        return false;
+    
+}
+
+bool stop4(char **board, int n, char computerLetter, char humanLetter)
+{
+    int left = 0, right = 0, up = 0, down = 0, upRight = 0, upLeft = 0, downRight = 0, downLeft = 0;
+    int row, col;
+    int stopRow = 0, stopCol = 0;
+    
+    for (row = 0; row < n; row++){
+        for (col = 0; col < n; col++){
+            
+            
+            // how many are RIGHT
+            bool rightLoop = true;
+            for (int i = col; (i < n) && (i + 1 < n) && (rightLoop == true); i++){
+                if (board[row][i] == board[row][i + 1] && board[row][i] == humanLetter){
+                    right += 1;
+                    
+                    if (right == 2 && i + 2 < n && board[row][i + 2] == 'U')
+                    {stopRow = row;
+                        stopCol = i + 2;}}
+                else
+                    rightLoop = false;}
+            
+            // how many are LEFT
+            bool leftLoop = true;
+            for (int i = col; (i > 0) && (i - 1 >= 0) && (leftLoop == true); i++){
+                if (board[row][i] == board[row][i - 1] && board[row][i] == humanLetter){
+                    left += 1;
+                    
+                    if (left == 2 && i - 2 >= 0 && board[row][i - 2] == 'U')
+                    {stopRow = row;
+                        stopCol = i - 2;}}
+                else
+                    leftLoop = false;}
+            
+            
+            // how many are BELOW
+            bool downLoop = true;
+            for (int j = row; (j < n) && (j + 1 < n) && (downLoop == true); j++){
+                if (board[j][col] == board[j + 1][col] && board[j][col] == humanLetter){
+                    down += 1;
+                    
+                    if (down == 2 && j + 2 < n && board[j + 2][col] == 'U')
+                    {stopRow = j + 2;
+                        stopCol = col;}}
+                else
+                    downLoop = false;}
+            
+            
+            // how many are ABOVE
+            bool upLoop = true;
+            for (int j = row; (j > 0) && (j - 1 >= 0) && (upLoop == true); j--){
+                if (board[j][col] == board[j - 1][col] && board[j][col] == humanLetter){
+                    up += 1;
+                    
+                    if (up == 2 && j - 2 >= 0 && board[j - 2][col] == 'U')
+                    {stopRow = j - 2;
+                        stopCol = col;}}
+                else
+                    upLoop = false;}
+            
+            
+            
+            // how many are UP AND LEFT
+            bool upLeftLoop = true;
+            for(int i = row, j = col; (i > 0) && (j > 0) && (upLeftLoop == true); i--, j--){
+                if (board[i][j] == board[i - 1][j + 1] && board[i][j] == humanLetter){
+                    upRight += 1;
+                    
+                    if (upLeft == 2 && j - 2 >= 0 && i - 2 >= 0 && board[i - 2][j - 2] == 'U')
+                    {stopRow = i - 2;
+                        stopCol = j - 2;}}
+                else
+                    upLeftLoop = false;}
+            
+            
+            // how many are UP AND RIGHT
+            bool upRightLoop = true;
+            for(int i = row, j = col; (i > 0) && (j < n - 1) && (upRightLoop == true); i--, j++){
+                if (board[i][j] == board[i - 1][j + 1] && board[i][j] == humanLetter){
+                    upRight += 1;
+                    
+                    if (upRight == 2 && j + 2 < n && i - 2 >= 0 && board[i - 2][j + 2] == 'U')
+                    {stopRow = i - 2;
+                        stopCol = j + 2;}}
+                else
+                    upRightLoop = false;}
+            
+            
+            
+            // how many are DOWN AND RIGHT
+            bool downRightLoop = true;
+            for(int i = row, j = col; (i + 1 < n) && (j < n - 1) && (downRightLoop == true); i++, j++){
+                if (board[i][j] == board[i + 1][j + 1] && board[i][j] == humanLetter){
+                    downRight += 1;
+                    
+                    if (downRight == 2 && i + 2 < n && j + 2 < n && board[i + 2][j + 2] == 'U')
+                    {stopRow = i + 2;
+                        stopCol = j + 2;}}
+                else
+                    downRightLoop = false;}
+            
+            
+            // how many are DOWN AND LEFT
+            bool downLeftLoop = true;
+            for(int i = row, j = col; (i + 1 < n) && (j > 0) && (downLeftLoop == true); i++, j--){
+                if (board[i][j] == board[i + 1][j - 1] && board[i][j] == humanLetter){
+                    downLeft += 1;
+                    
+                    if (downLeft == 2 && i + 2 < n && j - 2 >= 0 && board[i + 2][j - 2] == 'U')
+                    {stopRow = i + 2;
+                        stopCol = j - 2;}}
+                else
+                    downLeftLoop = false;}
+            
+            
+            left = 0;
+            right = 0;
+            up = 0;
+            down = 0;
+            upRight = 0;
+            upLeft = 0;
+            downLeft = 0;
+            downRight = 0;}}
+    
+    if (stopRow != 0 || stopCol != 0){
+        board[stopRow][stopCol] = computerLetter;
+        printf("Computer lays a stone at ROW %d COL %d.\n", stopRow, stopCol);
+        return true;}
+    else
+        return false;
+    
+}
+
+
+bool stop5(char **board, int n, char computerLetter, char humanLetter)
+{
+    int left = 0, right = 0, up = 0, down = 0, upRight = 0, upLeft = 0, downRight = 0, downLeft = 0;
+    int row, col;
+    int stopRow = 0, stopCol = 0;
+    
+    for (row = 0; row < n; row++){
+        for (col = 0; col < n; col++){
+            
+                      
+            // how many are RIGHT
+            bool rightLoop = true;
+            for (int i = col; (i < n) && (i + 1 < n) && (rightLoop == true); i++){
+                if (board[row][i] == board[row][i + 1] && board[row][i] == humanLetter){
+                    right += 1;
+                    
+                    if (right == 3 && i + 2 < n && board[row][i + 2] == 'U')
+                    {stopRow = row;
+                        stopCol = i + 2;}}
+                else
+                    rightLoop = false;}
+            
+            
+            // how many are LEFT
+            bool leftLoop = true;
+            for (int i = col; (i > 0) && (i - 1 >= 0) && (leftLoop == true); i++){
+                if (board[row][i] == board[row][i - 1] && board[row][i] == humanLetter){
+                    left += 1;
+                    
+                    if (left == 3 && i - 2 >= 0 && board[row][i - 2] == 'U')
+                    {stopRow = row;
+                        stopCol = i - 2;}}
+                else
+                    leftLoop = false;}
+            
+            
+            // how many are BELOW
+            bool downLoop = true;
+            for (int j = row; (j < n) && (j + 1 < n) && (downLoop == true); j++){
+                if (board[j][col] == board[j + 1][col] && board[j][col] == humanLetter){
+                    down += 1;
+                    
+                    if (down == 3 && j + 2 < n && board[j + 2][col] == 'U')
+                    {stopRow = j + 2;
+                        stopCol = col;}}
+                else
+                    downLoop = false;}
+            
+            // how many are ABOVE
+            bool upLoop = true;
+            for (int j = row; (j > 0) && (j - 1 >= 0) && (upLoop == true); j--){
+                if (board[j][col] == board[j - 1][col] && board[j][col] == humanLetter){
+                    up += 1;
+                    
+                    if (up == 3 && j - 2 >= 0 && board[j - 2][col] == 'U')
+                    {stopRow = j - 2;
+                        stopCol = col;}}
+                else
+                    upLoop = false;}
+            
+            
+            // how many are UP AND RIGHT
+            bool upRightLoop = true;
+            for(int i = row, j = col; (i > 0) && (j < n - 1) && (upRightLoop == true); i--, j++){
+                if (board[i][j] == board[i - 1][j + 1] && board[i][j] == humanLetter){
+                    upRight += 1;
+                    
+                    if (upRight == 3 && j + 2 < n && i - 2 >= 0 && board[i - 2][j + 2] == 'U')
+                    {stopRow = i - 2;
+                        stopCol = j + 2;}}
+                else
+                    upRightLoop = false;}
+            
+            // how many are UP AND LEFT
+            bool upLeftLoop = true;
+            for(int i = row, j = col; (i > 0) && (j > 0) && (upLeftLoop == true); i--, j--){
+                if (board[i][j] == board[i - 1][j + 1] && board[i][j] == humanLetter){
+                    upRight += 1;
+                    
+                    if (upLeft == 3 && j - 2 >= 0 && i - 2 >= 0 && board[i - 2][j - 2] == 'U')
+                    {stopRow = i - 2;
+                        stopCol = j - 2;}}
+                else
+                    upLeftLoop = false;}
+            
+                    
+            // how many are DOWN AND RIGHT
+            bool downRightLoop = true;
+            for(int i = row, j = col; (i + 1 < n) && (j < n - 1) && (downRightLoop == true); i++, j++){
+                if (board[i][j] == board[i + 1][j + 1] && board[i][j] == humanLetter){
+                    downRight += 1;
+                    
+                    if (downRight == 3 && i + 2 < n && j + 2 < n && board[i + 2][j + 2] == 'U')
+                    {stopRow = i + 2;
+                        stopCol = j + 2;}}
+                else
+                    downRightLoop = false;}
+            
+            
+            // how many are DOWN AND LEFT
+            bool downLeftLoop = true;
+            for(int i = row, j = col; (i + 1 < n) && (j > 0) && (downLeftLoop == true); i++, j--){
+                if (board[i][j] == board[i + 1][j - 1] && board[i][j] == humanLetter){
+                    downLeft += 1;
+                    
+                    if (downLeft == 3 && i + 2 < n && j - 2 >= 0 && board[i + 2][j - 2] == 'U')
+                    {stopRow = i + 2;
+                        stopCol = j - 2;}}
+                else
+                    downLeftLoop = false;}
+            
+            
+            left = 0;
+            right = 0;
+            up = 0;
+            down = 0;
+            upRight = 0;
+            upLeft = 0;
+            downLeft = 0;
+            downRight = 0;}}
+    
+    if (stopRow != 0 || stopCol != 0){
+        board[stopRow][stopCol] = computerLetter;
+        printf("Computer lays a stone at ROW %d COL %d.\n", stopRow, stopCol);
+        return true;}
+    else
+        return false;
+    
+}
+
+bool stopWUW(char **board, int n, char computerLetter, char humanLetter)
+{
+    
+    
+    int row, col;
+    int stopRow = 0, stopCol = 0;
+    
+    for (row = 0; row < n; row++){
+        for (col = 0; col < n; col++){
+            
+            
+    // stop it Right
+    for (int i = col;(i + 3 < n); i++){
+        if (board[row][i] == 'U' && board[row][i + 1] == humanLetter && board[row][i + 2] == 'U' && board[row][i + 3] == humanLetter)
+                    
+                    {stopRow = row;
+                        stopCol = i + 2;}}
+    
+    // stop it Down
+    for (int i = row;(i + 3 < n); i++){
+        if (board[i][col] == 'U' && board[i + 1][col] == humanLetter && board[i + 2][col] == 'U' && board[i + 3][col] == humanLetter)
+            
+        {stopRow = i + 2;
+            stopCol = col;}}
+            
+    // stop it UpRight
+    for (int i = row, j = col; (i - 3 >= 0) && (j + 3 < n); i--, j++){
+    if (board[i][j] == 'U' && board[i - 1][j + 1] == humanLetter && board[i - 2][j + 2] == 'U' && board[i - 3][j + 3] == humanLetter)
+                    
+    {stopRow = i - 2;
+     stopCol = j + 2;}}
+            
+            
+    // stop it downRight
+   for (int i = row, j = col; (i + 3 < n) && (j + 3 < n); i++, j++){
+   if (board[i][j] == 'U' && board[i + 1][j + 1] == humanLetter && board[i + 2][j + 2] == 'U' && board[i + 3][j + 3] == humanLetter)
+        
+                {stopRow = i + 2;
+                    stopCol = j + 2;}}
+        
+        }}
+
+
+        if (stopRow != 0 || stopCol != 0){
+        board[stopRow][stopCol] = computerLetter;
+        printf("Computer lays a stone at ROW %d COL %d.\n", stopRow, stopCol);
+        return true;}
+    else
+        return false;
+    
+}
+
+bool stopUWWUWWU(char **board, int n, char computerLetter, char humanLetter)
+{
+    
+    
+    int row, col;
+    int stopRow = 0, stopCol = 0;
+    
+    for (row = 0; row < n; row++){
+        for (col = 0; col < n; col++){
+            
+            
+            // stop it Right
+            for (int i = col;(i + 6 < n); i++){
+                if (board[row][i] == 'U' && board[row][i + 1] == humanLetter && board[row][i + 2] == humanLetter && board[row][i + 3] == 'U' && board[row][i+4] == humanLetter && board[row][i +5] == humanLetter && board[row][i + 6] == 'U')
+                    
+                {stopRow = row;
+                    stopCol = i + 3;}}
+            
+            // stop it Down
+            for (int i = row;(i + 6 < n); i++){
+                if (board[i][col] == 'U' && board[i + 1][col] == humanLetter && board[i + 2][col] == humanLetter && board[i + 3][col] == 'U' && board[i + 4][col] == humanLetter && board[i + 5][col] == humanLetter && board[i + 6][col] == 'U')
+                    
+                {stopRow = i + 3;
+                    stopCol = col;}}
+            
+            // stop it UpRight
+            for (int i = row, j = col; (i - 6 >= 0) && (j + 6 < n); i--, j++){
+                if (board[i][j] == 'U' && board[i - 1][j + 1] == humanLetter && board[i - 2][j + 2] == humanLetter && board[i - 3][j + 3] == 'U' && board[i - 4][j + 4] == humanLetter && board[i - 5][j + 5] == humanLetter && board[i - 6][j + 6] == 'U')
+                    
+                {stopRow = i - 3;
+                    stopCol = j + 3;}}
+            
+            // stop it downRight
+            for (int i = row, j = col; (i + 6 < n) && (j + 6 < n); i++, j++){
+                if (board[i][j] == 'U' && board[i + 1][j + 1] == humanLetter && board[i + 2][j + 2] == humanLetter && board[i + 3][j + 3] == 'U'  && board[i+4][j+4] == humanLetter && board[i+5][j+5] == humanLetter && board[i+6][j+6] == 'U')
+                    
+                {stopRow = i + 3;
+                    stopCol = j + 3;}}
+            
+        }}
+    
+    
+    if (stopRow != 0 || stopCol != 0){
+        board[stopRow][stopCol] = computerLetter;
+        printf("Computer lays a stone at ROW %d COL %d.\n", stopRow, stopCol);
+        return true;}
+    else
+        return false;
+    
+}
+
+
+
+int findLongest (char **board, int n, int row, int col)
+
+{ // beginning of findLongest function
+    int left = 0, right = 0, up = 0, down = 0, upRight = 0, upLeft = 0, downRight = 0, downLeft = 0;
+    
+    // how many are LEFT of the entered position
+    bool leftLoop = true;
+    for (int i = col; (i > 0) && (i - 1 >= 0) && (leftLoop == true); i--){
+        if (board[row][i] == board[row][i - 1])
+            left += 1;
+        else
+            leftLoop = false;}
+    
+    
+    // how many are RIGHT of the entered position
+    bool rightLoop = true;
+    for (int i = col; (i < n) && (i + 1 < n) && (rightLoop == true); i++){
+        if (board[row][i] == board[row][i + 1])
+            right += 1;
+        else
+            rightLoop = false;}
+    
+    
+    // how many are ABOVE the entered position
+    bool upLoop = true;
+    for (int j = row; (j > 0) && (j - 1 >= 0) && (upLoop == true); j--){
+        if (board[j][col] == board[j - 1][col])
+            up += 1;
+        else
+            upLoop = false;}
+    
+    
+    // how many are BELOW the entered position
+    bool downLoop = true;
+    for (int j = row; (j < n) && (j + 1 < n) && (downLoop == true); j++){
+        if (board[j][col] == board[j + 1][col])
+            down += 1;
+        else
+            downLoop = false;}
+    
+    
+    // how many are UP AND RIGHT of the entered position
+    bool upRightLoop = true;
+    for(int i = row, j = col; (i > 0) && (j < n - 1) && (upRightLoop == true); i--, j++){
+        if (board[i][j] == board[i - 1][j + 1])
+            upRight += 1;
+        else
+            upRightLoop = false;}
+    
+    
+    // how many are UP AND LEFT of the entered position
+    bool upLeftLoop = true;
+    for(int i = row, j = col; (i > 0) && (j > 0) && (upLeftLoop == true); i--, j--){
+        if (board[i][j] == board[i - 1][j - 1])
+            upLeft += 1;
+        else
+            upLeftLoop = false;}
+    
+    
+    // how many are DOWN AND RIGHT of the entered position
+    bool downRightLoop = true;
+    for(int i = row, j = col; (i + 1 < n) && (j < n - 1) && (downRightLoop == true); i++, j++){
+        if (board[i][j] == board[i + 1][j + 1])
+            downRight += 1;
+        else
+            downRightLoop = false;}
+    
+    
+    // how many are DOWN AND LEFT of the entered position
+    bool downLeftLoop = true;
+    for(int i = row, j = col; (i + 1 < n) && (j > 0) && (downLeftLoop == true); i++, j--){
+        if (board[i][j] == board[i + 1][j - 1])
+            downLeft += 1;
+        else
+            downLeftLoop = false;}
+    
+    
+    int horizontalSum, verticalSum, positiveSlopeSum, negativeSlopeSum;
+    
+    horizontalSum = right + left + 1;
+    verticalSum = up + down + 1;
+    positiveSlopeSum = downLeft + upRight + 1;
+    negativeSlopeSum = upLeft + downRight + 1;
+    
+    if ((horizontalSum > verticalSum) && (horizontalSum > positiveSlopeSum) && (horizontalSum > negativeSlopeSum))
+    {sideCheck = true;
+        return horizontalSum;}
+    else if ((verticalSum > positiveSlopeSum) && (verticalSum > negativeSlopeSum))
+    {upCheck = true;
+        return verticalSum;}
+    else if (positiveSlopeSum > negativeSlopeSum)
+    {upSlantCheck = true;
+        return positiveSlopeSum;}
+    else
+    {downSlantCheck = true;
+        return negativeSlopeSum;}
+} // end of findLongest function
+
+
+bool checkForWinner(char **board, int n)
+
+{ // beginning of checkForWinner function
+    
+    bool black = false, white = false;
+    bool keepChecking = true;
+    int left = 0, right = 0, up = 0, down = 0, upRight = 0, upLeft = 0, downRight = 0, downLeft = 0;
+    int row = 0, col = 0;
+    
+    while ((row < n && col < n) && (keepChecking)){
+        
+        for (row = 0; row < n; row++){
+            for (col = 0; col < n; col++){
+                
+                // how many are LEFT
+                bool leftLoop = true;
+                for (int i = col; (i > 0) && (i - 1 >= 0) && (leftLoop == true); i--){
+                    if (board[row][i] == board[row][i - 1])
+                        left += 1;
+                    else
+                        leftLoop = false;}
+                
+                // how many are RIGHT
+                bool rightLoop = true;
+                for (int i = col; (i < n) && (i + 1 < n) && (rightLoop == true); i++){
+                    if (board[row][i] == board[row][i + 1])
+                        right += 1;
+                    else
+                        rightLoop = false;}
+                
+                // how many are ABOVE
+                bool upLoop = true;
+                for (int j = row; (j > 0) && (j - 1 >= 0) && (upLoop == true); j--){
+                    if (board[j][col] == board[j - 1][col])
+                        up += 1;
+                    else
+                        upLoop = false;}
+                
+                // how many are BELOW
+                bool downLoop = true;
+                for (int j = row; (j < n) && (j + 1 < n) && (downLoop == true); j++){
+                    if (board[j][col] == board[j + 1][col])
+                        down += 1;
+                    else
+                        downLoop = false;}
+                
+                // how many are UP AND RIGHT
+                bool upRightLoop = true;
+                for(int i = row, j = col; (i > 0) && (j < n - 1) && (upRightLoop == true); i--, j++){
+                    if (board[i][j] == board[i - 1][j + 1])
+                        upRight += 1;
+                    else
+                        upRightLoop = false;}
+                
+                // how many are UP AND LEFT
+                bool upLeftLoop = true;
+                for(int i = row, j = col; (i > 0) && (j > 0) && (upLeftLoop == true); i--, j--){
+                    if (board[i][j] == board[i - 1][j - 1])
+                        upLeft += 1;
+                    else
+                        upLeftLoop = false;}
+                
+                // how many are DOWN AND RIGHT
+                bool downRightLoop = true;
+                for(int i = row, j = col; (i + 1 < n) && (j < n - 1) && (downRightLoop == true); i++, j++){
+                    if (board[i][j] == board[i + 1][j + 1])
+                        downRight += 1;
+                    else
+                        downRightLoop = false;}
+                
+                // how many are DOWN AND LEFT
+                bool downLeftLoop = true;
+                for(int i = row, j = col; (i + 1 < n) && (j > 0) && (downLeftLoop == true); i++, j--){
+                    if (board[i][j] == board[i + 1][j - 1])
+                        downLeft += 1;
+                    else
+                        downLeftLoop = false;}
+                
+                
+                int horizontalSum, verticalSum, positiveSlopeSum, negativeSlopeSum;
+                
+                horizontalSum = right + left + 1;
+                verticalSum = up + down + 1;
+                positiveSlopeSum = downLeft + upRight + 1;
+                negativeSlopeSum = upLeft + downRight + 1;
+                
+                
+                if (((verticalSum >= 6) || (horizontalSum >= 6) || (positiveSlopeSum >= 6) || (negativeSlopeSum >= 6)) && (board[row][col] == 'B'))
+                {keepChecking = false;
+                    black = true;}
+                
+                if (((verticalSum >= 6) || (horizontalSum >= 6) || (positiveSlopeSum >= 6) || (negativeSlopeSum >= 6)) &&(black == false) && (board[row][col] == 'W'))
+                {keepChecking = false;
+                    white = true;}
+                
+                horizontalSum = 0;
+                verticalSum = 0;
+                positiveSlopeSum = 0;
+                negativeSlopeSum = 0;
+                left = 0;
+                right = 0;
+                up = 0;
+                down = 0;
+                upRight = 0;
+                upLeft = 0;
+                downLeft = 0;
+                downRight = 0;
+                
+            }}}
+    
+    if (black == true) // black is the winner
+    {printf("Black player wins.\n");
+        return false;}
+    
+    else if (white == true) // white is the winner
+    {printf("White player wins.\n");
+        return false;}
+    
+    return true;
+}// end of checkForWinner function
+
+
+bool checkForDraw(char **board,int n)
+{int row, col;
+    for (row = 0; row < n; row++){
+        for (col = 0; col < n; col++){
+            if (board[row][col] == 'U')
+                return true;}}
+    printf("Draw!\n");
+    return false;}
+
+
+void printBoard(char **board, int n)
+{for (int i = 0; i < n; i++){
+        for (int j = 0; j < n; j++)
+            printf("%c", board[i][j]);
+        printf("\n");}}    
+    
